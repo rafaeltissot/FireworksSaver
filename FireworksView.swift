@@ -1,8 +1,21 @@
 import Foundation
 import ScreenSaver
 import AppKit
+import QuartzCore
 
 // MARK: - Models
+
+public struct RGBColor {
+    public var r: CGFloat
+    public var g: CGFloat
+    public var b: CGFloat
+    
+    public init(r: CGFloat, g: CGFloat, b: CGFloat) {
+        self.r = r
+        self.g = g
+        self.b = b
+    }
+}
 
 struct Particle {
     var x: CGFloat
@@ -10,17 +23,21 @@ struct Particle {
     var vx: CGFloat
     var vy: CGFloat
     var alpha: CGFloat
-    var color: NSColor
+    var r: CGFloat
+    var g: CGFloat
+    var b: CGFloat
     var size: CGFloat
     var decay: CGFloat
+    var friction: CGFloat
 }
 
 struct Rocket {
     var x: CGFloat
     var y: CGFloat
+    var vx: CGFloat
     var vy: CGFloat
     var targetY: CGFloat
-    var color: NSColor
+    var color: RGBColor
     var exploded: Bool
 }
 
@@ -437,6 +454,7 @@ public class ConfigureSheetController: NSWindowController {
 public class FireworksView: ScreenSaverView {
     private var particles: [Particle] = []
     private var rockets: [Rocket] = []
+    private var lastFrameTime: CFTimeInterval = 0
     
     private var configSheetController: ConfigureSheetController?
     
@@ -448,7 +466,7 @@ public class FireworksView: ScreenSaverView {
     private var gravityValue: CGFloat = 0.12
     private var colorPalette: Int = 0
     private var showTrails: Bool = true
-    private var activeColors: [NSColor] = []
+    private var activeColors: [RGBColor] = []
     
     // Enable "Opções..." button in macOS System Settings
     public override var hasConfigureSheet: Bool {
@@ -468,13 +486,18 @@ public class FireworksView: ScreenSaverView {
 
     public override init?(frame: NSRect, isPreview: Bool) {
         super.init(frame: frame, isPreview: isPreview)
-        animationTimeInterval = 1.0 / 60.0
-        reloadSettings()
+        setupEngine()
     }
 
     public required init?(coder: NSCoder) {
         super.init(coder: coder)
+        setupEngine()
+    }
+    
+    private func setupEngine() {
         animationTimeInterval = 1.0 / 60.0
+        wantsLayer = true
+        layer?.drawsAsynchronously = true
         reloadSettings()
     }
     
@@ -501,60 +524,68 @@ public class FireworksView: ScreenSaverView {
     private var rocketSpeedRange: ClosedRange<CGFloat> {
         switch rocketSpeedTag {
         case 1:
-            return 7.0 ... 11.0  // Lenta
+            return 9.0 ... 13.0  // Lenta
         case 3:
-            return 14.0 ... 20.0 // Rápida
+            return 16.0 ... 22.0 // Rápida
         case 4:
-            return 18.0 ... 26.0 // Turbo
+            return 21.0 ... 28.0 // Turbo
         default:
-            return 10.0 ... 16.0 // Normal
+            return 12.0 ... 17.0 // Normal
         }
     }
 
-    private func paletteColors(for palette: Int) -> [NSColor] {
+    private func paletteColors(for palette: Int) -> [RGBColor] {
         switch palette {
         case 1: // Dourado & Réveillon
             return [
-                NSColor(red: 1.0, green: 0.84, blue: 0.0, alpha: 1.0),
-                NSColor(red: 1.0, green: 0.92, blue: 0.55, alpha: 1.0),
-                NSColor(red: 0.95, green: 0.77, blue: 0.2, alpha: 1.0),
-                NSColor(red: 0.9, green: 0.9, blue: 0.95, alpha: 1.0),
-                .white
+                RGBColor(r: 1.0, g: 0.84, b: 0.0),
+                RGBColor(r: 1.0, g: 0.92, b: 0.55),
+                RGBColor(r: 0.95, g: 0.77, b: 0.2),
+                RGBColor(r: 0.9, g: 0.9, b: 0.95),
+                RGBColor(r: 1.0, g: 1.0, b: 1.0)
             ]
         case 2: // Neon / Cyberpunk
             return [
-                NSColor(red: 0.0, green: 1.0, blue: 0.95, alpha: 1.0),
-                NSColor(red: 1.0, green: 0.05, blue: 0.65, alpha: 1.0),
-                NSColor(red: 0.65, green: 0.1, blue: 1.0, alpha: 1.0),
-                NSColor(red: 0.2, green: 1.0, blue: 0.3, alpha: 1.0),
-                NSColor(red: 1.0, green: 0.95, blue: 0.0, alpha: 1.0)
+                RGBColor(r: 0.0, g: 1.0, b: 0.95),
+                RGBColor(r: 1.0, g: 0.05, b: 0.65),
+                RGBColor(r: 0.65, g: 0.1, b: 1.0),
+                RGBColor(r: 0.2, g: 1.0, b: 0.3),
+                RGBColor(r: 1.0, g: 0.95, b: 0.0)
             ]
         case 3: // Fogo & Brasas
             return [
-                NSColor.systemRed,
-                NSColor.systemOrange,
-                NSColor.systemYellow,
-                NSColor(red: 1.0, green: 0.25, blue: 0.0, alpha: 1.0),
-                NSColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
+                RGBColor(r: 1.0, g: 0.18, b: 0.05),
+                RGBColor(r: 1.0, g: 0.45, b: 0.0),
+                RGBColor(r: 1.0, g: 0.85, b: 0.1),
+                RGBColor(r: 1.0, g: 0.25, b: 0.0),
+                RGBColor(r: 1.0, g: 0.7, b: 0.2)
             ]
         case 4: // Gelo & Aurora
             return [
-                NSColor.cyan,
-                NSColor.systemTeal,
-                NSColor(red: 0.1, green: 0.8, blue: 1.0, alpha: 1.0),
-                NSColor(red: 0.4, green: 0.95, blue: 0.7, alpha: 1.0),
-                NSColor(white: 0.95, alpha: 1.0)
+                RGBColor(r: 0.0, g: 0.95, b: 1.0),
+                RGBColor(r: 0.1, g: 0.75, b: 0.9),
+                RGBColor(r: 0.35, g: 1.0, b: 0.7),
+                RGBColor(r: 0.6, g: 0.85, b: 1.0),
+                RGBColor(r: 0.95, g: 0.98, b: 1.0)
             ]
         default: // Multicolorido
             return [
-                .systemRed, .systemGreen, .systemBlue, .systemOrange,
-                .systemYellow, .systemPurple, .systemPink, .cyan, .white
+                RGBColor(r: 1.0, g: 0.23, b: 0.19), // Red
+                RGBColor(r: 0.2, g: 0.84, b: 0.29), // Green
+                RGBColor(r: 0.0, g: 0.48, b: 1.0),  // Blue
+                RGBColor(r: 1.0, g: 0.58, b: 0.0),  // Orange
+                RGBColor(r: 1.0, g: 0.8, b: 0.0),   // Yellow
+                RGBColor(r: 0.69, g: 0.32, b: 0.87), // Purple
+                RGBColor(r: 1.0, g: 0.18, b: 0.57), // Pink
+                RGBColor(r: 0.2, g: 0.85, b: 0.95), // Cyan
+                RGBColor(r: 1.0, g: 1.0, b: 1.0)    // White
             ]
         }
     }
 
     public override func startAnimation() {
         super.startAnimation()
+        lastFrameTime = CACurrentMediaTime()
         reloadSettings()
     }
 
@@ -563,50 +594,72 @@ public class FireworksView: ScreenSaverView {
     }
 
     public override func animateOneFrame() {
+        let now = CACurrentMediaTime()
+        let dt: CGFloat
+        if lastFrameTime == 0 {
+            dt = 1.0 / 60.0
+        } else {
+            // Clamp delta time to avoid large jumps during pauses
+            dt = min(max(CGFloat(now - lastFrameTime), 0.005), 0.05)
+        }
+        lastFrameTime = now
+        
+        // Time factor normalized to 60 FPS (1.0 = exactly 60 FPS)
+        let factor = dt * 60.0
+        
         // Spawn rockets randomly based on frequency
         let spawnChance = UInt32(max(1, frequency))
         let maxRockets = max(2, frequency + 2)
         
         if arc4random_uniform(100) < spawnChance && rockets.count < maxRockets {
-            let startX = CGFloat.random(in: bounds.width * 0.1 ... bounds.width * 0.9)
-            let targetY = CGFloat.random(in: bounds.height * 0.45 ... bounds.height * 0.85)
-            let color = activeColors.randomElement() ?? .systemYellow
+            let startX = CGFloat.random(in: bounds.width * 0.12 ... bounds.width * 0.88)
+            let targetY = CGFloat.random(in: bounds.height * 0.50 ... bounds.height * 0.86)
+            let color = activeColors.randomElement() ?? RGBColor(r: 1, g: 0.8, b: 0)
             let vy = CGFloat.random(in: rocketSpeedRange)
-            rockets.append(Rocket(x: startX, y: 0, vy: vy, targetY: targetY, color: color, exploded: false))
+            let vx = CGFloat.random(in: -0.5 ... 0.5) // Slight natural launch tilt
+            rockets.append(Rocket(x: startX, y: 0, vx: vx, vy: vy, targetY: targetY, color: color, exploded: false))
         }
 
-        // Update rockets
+        // Update rockets with natural ascent deceleration
         for i in (0 ..< rockets.count).reversed() {
-            rockets[i].y += rockets[i].vy
+            rockets[i].x += rockets[i].vx * factor
+            rockets[i].y += rockets[i].vy * factor
+            rockets[i].vy -= 0.12 * factor // Gradual ascent drag
             
             // Spark trail
             if showTrails {
                 let spark = Particle(
-                    x: rockets[i].x + CGFloat.random(in: -1 ... 1),
-                    y: rockets[i].y - 3,
-                    vx: CGFloat.random(in: -0.3 ... 0.3),
-                    vy: CGFloat.random(in: -2.0 ... -0.6),
-                    alpha: 0.75,
-                    color: NSColor(red: 1.0, green: 0.82, blue: 0.35, alpha: 0.8),
+                    x: rockets[i].x + CGFloat.random(in: -1.0 ... 1.0),
+                    y: rockets[i].y - 3.0,
+                    vx: CGFloat.random(in: -0.4 ... 0.4),
+                    vy: CGFloat.random(in: -1.8 ... -0.6),
+                    alpha: CGFloat.random(in: 0.65 ... 0.9),
+                    r: 1.0, g: 0.82, b: 0.35,
                     size: 2.0,
-                    decay: 0.04
+                    decay: CGFloat.random(in: 0.03 ... 0.05),
+                    friction: 0.94
                 )
                 particles.append(spark)
             }
             
-            if rockets[i].y >= rockets[i].targetY {
+            // Explode at peak deceleration or target height
+            if rockets[i].vy <= 1.0 || rockets[i].y >= rockets[i].targetY {
                 explode(rocket: rockets[i])
                 rockets.remove(at: i)
             }
         }
 
-        // Update particles
-        let g = gravityValue
+        // Update particles with aerodynamic friction and gravity
+        let g = gravityValue * factor
         for i in (0 ..< particles.count).reversed() {
-            particles[i].x += particles[i].vx
-            particles[i].y += particles[i].vy
+            let f = pow(particles[i].friction, factor)
+            particles[i].vx *= f
+            particles[i].vy *= f
             particles[i].vy -= g
-            particles[i].alpha -= particles[i].decay
+            particles[i].x += particles[i].vx * factor
+            particles[i].y += particles[i].vy * factor
+            particles[i].alpha -= particles[i].decay * factor
+            
             if particles[i].alpha <= 0 {
                 particles.remove(at: i)
             }
@@ -616,47 +669,77 @@ public class FireworksView: ScreenSaverView {
     }
 
     private func explode(rocket: Rocket) {
-        let minCount = max(20, Int(Double(particleCount) * 0.75))
+        let minCount = max(25, Int(Double(particleCount) * 0.75))
         let maxCount = max(minCount + 10, Int(Double(particleCount) * 1.25))
         let count = Int.random(in: minCount ... maxCount)
-        let baseColor = rocket.color
+        let color = rocket.color
+        
+        // Primary explosion with natural spherical spread and velocity variation
         for _ in 0 ..< count {
             let angle = CGFloat.random(in: 0 ... 2 * .pi)
-            let speed = CGFloat.random(in: 2 ... 7.5)
+            let speed = CGFloat.random(in: 2.5 ... 8.0)
             let sizeVariation = CGFloat.random(in: 0.8 ... 1.25)
+            let decay = CGFloat.random(in: 0.011 ... 0.022)
+            
             let p = Particle(
                 x: rocket.x,
                 y: rocket.y,
                 vx: cos(angle) * speed,
                 vy: sin(angle) * speed,
                 alpha: 1.0,
-                color: baseColor,
+                r: color.r,
+                g: color.g,
+                b: color.b,
                 size: baseParticleSize * sizeVariation,
-                decay: CGFloat.random(in: 0.012 ... 0.025)
+                decay: decay,
+                friction: 0.963 // Air drag gives organic curving trajectory
             )
             particles.append(p)
+        }
+        
+        // White-hot core flash at explosion center
+        for _ in 0 ..< 6 {
+            let flashSpeed = CGFloat.random(in: 0.5 ... 2.0)
+            let angle = CGFloat.random(in: 0 ... 2 * .pi)
+            particles.append(Particle(
+                x: rocket.x,
+                y: rocket.y,
+                vx: cos(angle) * flashSpeed,
+                vy: sin(angle) * flashSpeed,
+                alpha: 1.0,
+                r: 1.0, g: 1.0, b: 1.0,
+                size: baseParticleSize * 1.3,
+                decay: 0.05,
+                friction: 0.90
+            ))
         }
     }
 
     public override func draw(_ rect: NSRect) {
-        // Black background
-        NSColor.black.setFill()
-        rect.fill()
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
-        // Draw rockets
+        // Solid black background
+        ctx.setFillColor(red: 0, green: 0, blue: 0, alpha: 1.0)
+        ctx.fill(rect)
+
+        // Draw rockets (zero-allocation direct CGContext calls)
         for rocket in rockets {
-            let rRect = NSRect(x: rocket.x - 2, y: rocket.y - 4, width: 4, height: 8)
-            rocket.color.setFill()
-            let path = NSBezierPath(ovalIn: rRect)
-            path.fill()
+            let rRect = CGRect(x: rocket.x - 2, y: rocket.y - 4, width: 4, height: 8)
+            ctx.setFillColor(red: rocket.color.r, green: rocket.color.g, blue: rocket.color.b, alpha: 1.0)
+            ctx.fillEllipse(in: rRect)
         }
 
-        // Draw particles
+        // Draw particles directly (zero object allocations per frame)
         for p in particles {
-            let pRect = NSRect(x: p.x - p.size / 2, y: p.y - p.size / 2, width: p.size, height: p.size)
-            p.color.withAlphaComponent(p.alpha).setFill()
-            let path = NSBezierPath(ovalIn: pRect)
-            path.fill()
+            let half = p.size * 0.5
+            let pRect = CGRect(x: p.x - half, y: p.y - half, width: p.size, height: p.size)
+            ctx.setFillColor(red: p.r, green: p.g, blue: p.b, alpha: p.alpha)
+            
+            if p.size <= 3.0 {
+                ctx.fill(pRect) // 10x faster for sparks
+            } else {
+                ctx.fillEllipse(in: pRect)
+            }
         }
     }
 }
