@@ -188,9 +188,9 @@ public class ConfigureSheetController: NSWindowController {
         // Divider
         let divider = NSBox()
         divider.boxType = .separator
-        divider.translatesAutoresizingMaskIntoConstraints = false
         container.addArrangedSubview(divider)
-        divider.widthAnchor.constraint(equalTo: container.widthAnchor).isActive = true
+        divider.leadingAnchor.constraint(equalTo: container.leadingAnchor).isActive = true
+        divider.trailingAnchor.constraint(equalTo: container.trailingAnchor).isActive = true
         
         let labelColumnWidth: CGFloat = 160
         let controlWidth: CGFloat = 220
@@ -305,9 +305,9 @@ public class ConfigureSheetController: NSWindowController {
         // Bottom Divider
         let bottomDivider = NSBox()
         bottomDivider.boxType = .separator
-        bottomDivider.translatesAutoresizingMaskIntoConstraints = false
         container.addArrangedSubview(bottomDivider)
-        bottomDivider.widthAnchor.constraint(equalTo: container.widthAnchor).isActive = true
+        bottomDivider.leadingAnchor.constraint(equalTo: container.leadingAnchor).isActive = true
+        bottomDivider.trailingAnchor.constraint(equalTo: container.trailingAnchor).isActive = true
         
         // Buttons
         let cancelButton = NSButton(title: "Cancelar", target: self, action: #selector(cancelClicked(_:)))
@@ -325,8 +325,9 @@ public class ConfigureSheetController: NSWindowController {
         buttonRow.orientation = .horizontal
         buttonRow.alignment = .centerY
         buttonRow.spacing = 12
-        buttonRow.widthAnchor.constraint(equalTo: container.widthAnchor).isActive = true
         container.addArrangedSubview(buttonRow)
+        buttonRow.leadingAnchor.constraint(equalTo: container.leadingAnchor).isActive = true
+        buttonRow.trailingAnchor.constraint(equalTo: container.trailingAnchor).isActive = true
     }
     
     @objc private func sliderChanged(_ sender: NSSlider) {
