@@ -17,6 +17,10 @@
 ## ✨ Destaques / Features
 
 - ⚡️ **100% Nativo em Swift:** Construído com `ScreenSaver.framework` e `AppKit`, sem dependências pesadas ou frameworks web.
+- ⏰ **Relógio Retrô Estilo Fliqlo:** Relógio flip mecânico com placas arredondadas em carvão escuro, fenda de dobradiça, numerais nítidos e **animação 2.5D de virada de folha (*flip card*)** a cada minuto.
+  - Suporte a formato **24 horas** ou **12 horas** (com indicador AM/PM).
+  - Escala ajustável: Pequeno (75%), Médio (100%) ou Grande (125%).
+  - Opção para ativar ou desativar o relógio a qualquer momento.
 - 🍏 **Universal Binary:** Suporte nativo completo para **Apple Silicon (M1/M2/M3/M4)** e **Intel (x86_64)**.
 - ⚙️ **Painel de Opções Nativo:** Integração completa com os Ajustes do Sistema do macOS através do botão **"Opções..."** (*Configure Sheet*).
 - 🎨 **Paletas de Cores Temáticas:**
