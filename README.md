@@ -23,20 +23,22 @@
   - Opção para ativar ou desativar o relógio a qualquer momento.
 - 🍏 **Universal Binary:** Suporte nativo completo para **Apple Silicon (M1/M2/M3/M4)** e **Intel (x86_64)**.
 - ⚙️ **Painel de Opções Nativo:** Integração completa com os Ajustes do Sistema do macOS através do botão **"Opções..."** (*Configure Sheet*).
-- 🎨 **Paletas de Cores Temáticas:**
-  - **Multicolorido:** O festival clássico com todas as cores do sistema.
-  - **Dourado & Réveillon:** Tons elegantes de champanhe, ouro e branco.
-  - **Neon / Cyberpunk:** Ciano elétrico, magenta, roxo e verde limão.
-  - **Fogo & Brasas:** Vermelho rubi, laranja vivo e amarelo incandescente.
-  - **Gelo & Aurora:** Azul celeste, ciano, menta e branco polar.
+- 🎨 **6 Paletas de Cores Temáticas + Explosões Multicoloridas:**
+  - **Multicolorido Vibrante (20 cores):** Espectro completo com 20 cores de alta saturação e explosões bicolores, tricolores e buquês arco-íris.
+  - **Dourado & Réveillon:** 8 tons elegantes de ouro clássico, champanhe, âmbar imperial, ouro rosé, prata e pérola.
+  - **Neon / Cyberpunk:** 10 tons elétricos de ciano laser, magenta, ultravioleta, verde matrix e amarelo ácido.
+  - **Fogo & Brasas:** 8 tons vulcânicos de carmesim, laranja labareda, âmbar solar e chama incandescente.
+  - **Gelo & Aurora Boreal:** 8 tons polares de ciano ártico, verde aurora, menta, índigo magnético e violeta boreal.
+  - **Carnaval / Tropical:** 10 tons festivos de rosa tropical, turquesa caribe, sol dourado, verde limão, tangerina e açaí.
 - 🚀 **Física Totalmente Ajustável:**
   - **Frequência de lançamentos:** De um ritmo calmo (1) até festa contínua (10).
   - **Velocidade dos foguetes:** Lenta, Normal, Rápida ou Turbo.
-  - **Densidade de partículas:** Leve (~50), Equilibrado (~80), Intenso (~140) ou Espetacular (~220).
-  - **Tamanho das partículas:** Pequenas (2.5 px), Médias (3.5 px) ou Grandes (5.0 px).
+  - **Densidade de partículas:** Leve (~30), Equilibrado (~60), Intenso (~100) ou Espetacular (~150).
+  - **Tamanho das partículas:** Pequenas, Médias ou Grandes, com abertura ampla proporcional à tela.
   - **Gravidade personalizável:** Flutuante / Lua (0.05), Normal / Terra (0.12) ou Pesada (0.22).
+  - **Modo de Energia:** Econômico / Silencioso (30 FPS), Equilibrado (45 FPS) ou Máximo (60 FPS).
   - **Rastro cintilante:** Fagulhas e faíscas brilhantes durante a subida de cada foguete.
-- 🔋 **Ultraleve e Eficiente:** Roda a 60 FPS estáveis com consumo mínimo de bateria e processamento.
+- 🔋 **Arquitetura Ultraleve (`CALayer` Pool):** Composição 100% acelerada por hardware via `WindowServer` (~1% a 2% de CPU), mantendo o Mac frio e silencioso mesmo em uso prolongado.
 
 ---
 

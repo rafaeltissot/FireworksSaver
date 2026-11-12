@@ -372,7 +372,7 @@ public class ConfigureSheetController: NSWindowController {
         gravityPopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
         
         palettePopup = NSPopUpButton(frame: .zero, pullsDown: false)
-        palettePopup.addItem(withTitle: "Multicolorido (Padrão)")
+        palettePopup.addItem(withTitle: "Multicolorido Vibrante (20 cores)")
         palettePopup.lastItem?.tag = 0
         palettePopup.addItem(withTitle: "Dourado & Réveillon")
         palettePopup.lastItem?.tag = 1
@@ -380,8 +380,10 @@ public class ConfigureSheetController: NSWindowController {
         palettePopup.lastItem?.tag = 2
         palettePopup.addItem(withTitle: "Fogo & Brasas")
         palettePopup.lastItem?.tag = 3
-        palettePopup.addItem(withTitle: "Gelo & Aurora")
+        palettePopup.addItem(withTitle: "Gelo & Aurora Boreal")
         palettePopup.lastItem?.tag = 4
+        palettePopup.addItem(withTitle: "Carnaval / Tropical")
+        palettePopup.lastItem?.tag = 5
         palettePopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
         
         fpsPopup = NSPopUpButton(frame: .zero, pullsDown: false)
@@ -535,7 +537,7 @@ public class ConfigureSheetController: NSWindowController {
 
 @objc(FireworksView)
 public class FireworksView: ScreenSaverView {
-    private static let maxPoolSize = 300
+    private static let maxPoolSize = 380
     
     private var particles: [Particle] = []
     private var rockets: [Rocket] = []
@@ -764,49 +766,87 @@ public class FireworksView: ScreenSaverView {
 
     private func paletteColors(for palette: Int) -> [RGBColor] {
         switch palette {
-        case 1: // Dourado & Réveillon
+        case 1: // Dourado & Réveillon (8 tons de ouro, champanhe, âmbar e prata)
             return [
-                RGBColor(r: 1.0, g: 0.84, b: 0.0),
-                RGBColor(r: 1.0, g: 0.92, b: 0.55),
-                RGBColor(r: 0.95, g: 0.77, b: 0.2),
-                RGBColor(r: 0.9, g: 0.9, b: 0.95),
-                RGBColor(r: 1.0, g: 1.0, b: 1.0)
+                RGBColor(r: 1.00, g: 0.84, b: 0.00), // Ouro Clássico
+                RGBColor(r: 1.00, g: 0.93, b: 0.58), // Champanhe Brilhante
+                RGBColor(r: 0.98, g: 0.72, b: 0.12), // Âmbar Imperial
+                RGBColor(r: 1.00, g: 0.62, b: 0.18), // Bronze Quente
+                RGBColor(r: 1.00, g: 0.88, b: 0.75), // Ouro Rosé
+                RGBColor(r: 0.88, g: 0.92, b: 1.00), // Prata Estelar
+                RGBColor(r: 0.96, g: 0.95, b: 0.82), // Pérola
+                RGBColor(r: 1.00, g: 1.00, b: 1.00)  // Branco Diamante
             ]
-        case 2: // Neon / Cyberpunk
+        case 2: // Neon / Cyberpunk (10 tons elétricos de alta saturação)
             return [
-                RGBColor(r: 0.0, g: 1.0, b: 0.95),
-                RGBColor(r: 1.0, g: 0.05, b: 0.65),
-                RGBColor(r: 0.65, g: 0.1, b: 1.0),
-                RGBColor(r: 0.2, g: 1.0, b: 0.3),
-                RGBColor(r: 1.0, g: 0.95, b: 0.0)
+                RGBColor(r: 0.00, g: 1.00, b: 0.96), // Ciano Laser
+                RGBColor(r: 1.00, g: 0.05, b: 0.68), // Magenta Elétrico
+                RGBColor(r: 0.68, g: 0.12, b: 1.00), // Roxo Ultravioleta
+                RGBColor(r: 0.15, g: 1.00, b: 0.35), // Verde Matrix
+                RGBColor(r: 1.00, g: 0.96, b: 0.00), // Amarelo Ácido
+                RGBColor(r: 1.00, g: 0.20, b: 0.38), // Rosa Choque Neon
+                RGBColor(r: 0.18, g: 0.50, b: 1.00), // Azul Elétrico
+                RGBColor(r: 1.00, g: 0.45, b: 0.00), // Laranja Fluorescente
+                RGBColor(r: 0.55, g: 1.00, b: 0.00), // Lima Radioativo
+                RGBColor(r: 0.88, g: 0.40, b: 1.00)  // Orquídea Neon
             ]
-        case 3: // Fogo & Brasas
+        case 3: // Fogo & Brasas (8 tons vulcânicos e solares)
             return [
-                RGBColor(r: 1.0, g: 0.18, b: 0.05),
-                RGBColor(r: 1.0, g: 0.45, b: 0.0),
-                RGBColor(r: 1.0, g: 0.85, b: 0.1),
-                RGBColor(r: 1.0, g: 0.25, b: 0.0),
-                RGBColor(r: 1.0, g: 0.7, b: 0.2)
+                RGBColor(r: 1.00, g: 0.14, b: 0.04), // Vermelho Vulcão
+                RGBColor(r: 1.00, g: 0.32, b: 0.00), // Laranja Labareda
+                RGBColor(r: 1.00, g: 0.52, b: 0.00), // Âmbar Solar
+                RGBColor(r: 1.00, g: 0.74, b: 0.08), // Ouro de Forja
+                RGBColor(r: 1.00, g: 0.90, b: 0.25), // Chama Amarela
+                RGBColor(r: 0.92, g: 0.08, b: 0.18), // Carmesim Profundo
+                RGBColor(r: 1.00, g: 0.42, b: 0.28), // Coral Brasa
+                RGBColor(r: 1.00, g: 0.96, b: 0.75)  // Incandescente
             ]
-        case 4: // Gelo & Aurora
+        case 4: // Gelo & Aurora Boreal (8 tons polares e magnéticos)
             return [
-                RGBColor(r: 0.0, g: 0.95, b: 1.0),
-                RGBColor(r: 0.1, g: 0.75, b: 0.9),
-                RGBColor(r: 0.35, g: 1.0, b: 0.7),
-                RGBColor(r: 0.6, g: 0.85, b: 1.0),
-                RGBColor(r: 0.95, g: 0.98, b: 1.0)
+                RGBColor(r: 0.00, g: 0.96, b: 1.00), // Ciano Ártico
+                RGBColor(r: 0.12, g: 0.76, b: 0.98), // Azul Glacial
+                RGBColor(r: 0.20, g: 1.00, b: 0.68), // Verde Aurora
+                RGBColor(r: 0.48, g: 1.00, b: 0.85), // Menta Polar
+                RGBColor(r: 0.52, g: 0.42, b: 1.00), // Índigo Magnético
+                RGBColor(r: 0.78, g: 0.48, b: 1.00), // Violeta Boreal
+                RGBColor(r: 0.65, g: 0.88, b: 1.00), // Gelo Cristalino
+                RGBColor(r: 0.95, g: 0.99, b: 1.00)  // Neve Brilhante
             ]
-        default: // Multicolorido
+        case 5: // Carnaval / Tropical (10 tons quentes e festivos)
             return [
-                RGBColor(r: 1.0, g: 0.23, b: 0.19),
-                RGBColor(r: 0.2, g: 0.84, b: 0.29),
-                RGBColor(r: 0.0, g: 0.48, b: 1.0),
-                RGBColor(r: 1.0, g: 0.58, b: 0.0),
-                RGBColor(r: 1.0, g: 0.8, b: 0.0),
-                RGBColor(r: 0.69, g: 0.32, b: 0.87),
-                RGBColor(r: 1.0, g: 0.18, b: 0.57),
-                RGBColor(r: 0.2, g: 0.85, b: 0.95),
-                RGBColor(r: 1.0, g: 1.0, b: 1.0)
+                RGBColor(r: 1.00, g: 0.16, b: 0.52), // Rosa Tropical
+                RGBColor(r: 0.00, g: 0.92, b: 0.76), // Turquesa Caribe
+                RGBColor(r: 1.00, g: 0.82, b: 0.00), // Sol Dourado
+                RGBColor(r: 0.52, g: 0.96, b: 0.12), // Verde Limão
+                RGBColor(r: 1.00, g: 0.42, b: 0.10), // Tangerina
+                RGBColor(r: 0.72, g: 0.24, b: 1.00), // Açaí / Púrpura
+                RGBColor(r: 0.00, g: 0.68, b: 1.00), // Azul Oceano
+                RGBColor(r: 1.00, g: 0.36, b: 0.38), // Goiaba / Coral
+                RGBColor(r: 0.98, g: 0.94, b: 0.25), // Abacaxi
+                RGBColor(r: 1.00, g: 0.55, b: 0.85)  // Hibisco
+            ]
+        default: // Multicolorido Vibrante (20 cores de espectro completo)
+            return [
+                RGBColor(r: 1.00, g: 0.18, b: 0.18), // 1. Vermelho Rubi
+                RGBColor(r: 1.00, g: 0.38, b: 0.08), // 2. Laranja Fogo
+                RGBColor(r: 1.00, g: 0.60, b: 0.00), // 3. Âmbar Vibrante
+                RGBColor(r: 1.00, g: 0.84, b: 0.00), // 4. Ouro Real
+                RGBColor(r: 0.96, g: 1.00, b: 0.15), // 5. Amarelo Limão
+                RGBColor(r: 0.55, g: 1.00, b: 0.18), // 6. Verde Lima
+                RGBColor(r: 0.15, g: 0.92, b: 0.32), // 7. Verde Esmeralda
+                RGBColor(r: 0.00, g: 0.96, b: 0.68), // 8. Água-Marinha
+                RGBColor(r: 0.00, g: 0.92, b: 0.98), // 9. Ciano Elétrico
+                RGBColor(r: 0.12, g: 0.68, b: 1.00), // 10. Azul Celeste
+                RGBColor(r: 0.18, g: 0.40, b: 1.00), // 11. Azul Safira
+                RGBColor(r: 0.45, g: 0.28, b: 1.00), // 12. Índigo Profundo
+                RGBColor(r: 0.72, g: 0.22, b: 1.00), // 13. Violeta Ametista
+                RGBColor(r: 0.92, g: 0.25, b: 1.00), // 14. Fúcsia Brilhante
+                RGBColor(r: 1.00, g: 0.15, b: 0.65), // 15. Pink Choque
+                RGBColor(r: 1.00, g: 0.28, b: 0.45), // 16. Melancia
+                RGBColor(r: 1.00, g: 0.52, b: 0.42), // 17. Salmão / Coral
+                RGBColor(r: 1.00, g: 0.78, b: 0.88), // 18. Rosa Cerejeira
+                RGBColor(r: 0.78, g: 0.92, b: 1.00), // 19. Azul Diamante
+                RGBColor(r: 1.00, g: 1.00, b: 1.00)  // 20. Branco Estelar
             ]
         }
     }
@@ -897,14 +937,14 @@ public class FireworksView: ScreenSaverView {
             if showTrails && rockets[i].trailTimer >= 1.8 && particles.count < (Self.maxPoolSize - 10) {
                 rockets[i].trailTimer = 0
                 let spark = Particle(
-                    x: rockets[i].x + CGFloat.random(in: -1.0 ... 1.0),
-                    y: rockets[i].y - 3.0,
-                    vx: CGFloat.random(in: -0.35 ... 0.35),
-                    vy: CGFloat.random(in: -1.6 ... -0.5),
-                    alpha: CGFloat.random(in: 0.65 ... 0.88),
+                    x: rockets[i].x + CGFloat.random(in: -1.2 ... 1.2),
+                    y: rockets[i].y - 3.5,
+                    vx: CGFloat.random(in: -0.45 ... 0.45),
+                    vy: CGFloat.random(in: -1.8 ... -0.5),
+                    alpha: CGFloat.random(in: 0.70 ... 0.92),
                     imageIndex: sparkImageIndex,
-                    size: 2.5,
-                    decay: CGFloat.random(in: 0.035 ... 0.055),
+                    size: 4.0,
+                    decay: CGFloat.random(in: 0.032 ... 0.052),
                     friction: 0.94
                 )
                 particles.append(spark)
@@ -956,10 +996,10 @@ public class FireworksView: ScreenSaverView {
                 layer.contents = dotImages[rocket.imageIndex]
                 layerStates[layerIdx].imageIndex = rocket.imageIndex
             }
-            if layerStates[layerIdx].width != 5.0 || layerStates[layerIdx].height != 9.0 {
-                layer.bounds = CGRect(x: 0, y: 0, width: 5.0, height: 9.0)
-                layerStates[layerIdx].width = 5.0
-                layerStates[layerIdx].height = 9.0
+            if layerStates[layerIdx].width != 6.5 || layerStates[layerIdx].height != 11.0 {
+                layer.bounds = CGRect(x: 0, y: 0, width: 6.5, height: 11.0)
+                layerStates[layerIdx].width = 6.5
+                layerStates[layerIdx].height = 11.0
             }
             layer.position = CGPoint(x: rocket.x, y: rocket.y)
             layer.opacity = 1.0
@@ -1006,18 +1046,55 @@ public class FireworksView: ScreenSaverView {
 
     private func explode(rocket: Rocket) {
         let availableSlots = max(0, Self.maxPoolSize - particles.count - rockets.count)
-        guard availableSlots > 8 else { return }
+        guard availableSlots > 10 else { return }
         
-        let targetCount = min(availableSlots - 4, particleCount)
-        let minCount = max(15, Int(Double(targetCount) * 0.75))
-        let maxCount = max(minCount + 5, min(availableSlots - 4, Int(Double(targetCount) * 1.15)))
+        let targetCount = min(availableSlots - 6, particleCount)
+        let minCount = max(20, Int(Double(targetCount) * 0.85))
+        let maxCount = max(minCount + 5, min(availableSlots - 6, Int(Double(targetCount) * 1.20)))
         let count = Int.random(in: minCount ... maxCount)
         
-        for _ in 0 ..< count {
+        // Scale burst velocity proportionally to screen height so explosions look grand on full-screen and balanced in preview
+        let screenScale = max(0.80, min(1.35, bounds.height / 850.0))
+        let visualBaseSize = baseParticleSize * 1.65
+        let paletteCount = max(1, activeColors.count)
+        
+        // Choose secondary & tertiary colors for rich multi-color bursts
+        let primaryColorIdx = rocket.imageIndex
+        let secondaryColorIdx = (primaryColorIdx + Int.random(in: 1 ..< max(2, paletteCount))) % paletteCount
+        let tertiaryColorIdx = (secondaryColorIdx + Int.random(in: 1 ..< max(2, paletteCount))) % paletteCount
+        
+        // Explosion style:
+        // 0 = Bi-color concentric peony (inner + outer ring)
+        // 1 = Tri-color chrysanthemum mix
+        // 2 = Rainbow / multi-color bouquet
+        // 3 = Classic single-color with golden/white-tipped outer crown
+        let burstStyle = Int.random(in: 0 ... 3)
+        
+        for i in 0 ..< count {
             let angle = CGFloat.random(in: 0 ... 2 * .pi)
-            let speed = CGFloat.random(in: 2.5 ... 8.0)
-            let sizeVariation = CGFloat.random(in: 0.85 ... 1.25)
-            let decay = CGFloat.random(in: 0.013 ... 0.024)
+            let isOuterRing = (i % 3 != 0)
+            
+            // Larger speed range (3.8 ... 12.8) + higher retention (0.968) creates ~75% wider explosion canopy
+            let rawSpeed: CGFloat = isOuterRing
+                ? CGFloat.random(in: 7.2 ... 12.8)
+                : CGFloat.random(in: 3.2 ... 7.5)
+            let speed = rawSpeed * screenScale
+            
+            let chosenColorIdx: Int
+            switch burstStyle {
+            case 0:
+                chosenColorIdx = isOuterRing ? primaryColorIdx : secondaryColorIdx
+            case 1:
+                let mod = i % 3
+                chosenColorIdx = (mod == 0) ? primaryColorIdx : ((mod == 1) ? secondaryColorIdx : tertiaryColorIdx)
+            case 2:
+                chosenColorIdx = Int.random(in: 0 ..< paletteCount)
+            default:
+                chosenColorIdx = (i % 6 == 0) ? sparkImageIndex : primaryColorIdx
+            }
+            
+            let sizeVariation = CGFloat.random(in: 0.90 ... 1.40)
+            let decay = CGFloat.random(in: 0.009 ... 0.018)
             
             let p = Particle(
                 x: rocket.x,
@@ -1025,17 +1102,17 @@ public class FireworksView: ScreenSaverView {
                 vx: cos(angle) * speed,
                 vy: sin(angle) * speed,
                 alpha: 1.0,
-                imageIndex: rocket.imageIndex,
-                size: baseParticleSize * sizeVariation,
+                imageIndex: chosenColorIdx,
+                size: visualBaseSize * sizeVariation,
                 decay: decay,
-                friction: 0.963
+                friction: 0.968
             )
             particles.append(p)
         }
         
-        // White-hot center flash
-        for _ in 0 ..< 4 {
-            let flashSpeed = CGFloat.random(in: 0.5 ... 2.0)
+        // White-hot center flash (larger & brighter core burst)
+        for _ in 0 ..< 6 {
+            let flashSpeed = CGFloat.random(in: 0.8 ... 3.2) * screenScale
             let angle = CGFloat.random(in: 0 ... 2 * .pi)
             particles.append(Particle(
                 x: rocket.x,
@@ -1044,9 +1121,9 @@ public class FireworksView: ScreenSaverView {
                 vy: sin(angle) * flashSpeed,
                 alpha: 1.0,
                 imageIndex: whiteImageIndex,
-                size: baseParticleSize * 1.4,
-                decay: 0.06,
-                friction: 0.90
+                size: visualBaseSize * 1.5,
+                decay: 0.05,
+                friction: 0.91
             ))
         }
     }
