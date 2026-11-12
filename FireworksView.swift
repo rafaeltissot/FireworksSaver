@@ -23,9 +23,7 @@ struct Particle {
     var vx: CGFloat
     var vy: CGFloat
     var alpha: CGFloat
-    var r: CGFloat
-    var g: CGFloat
-    var b: CGFloat
+    var imageIndex: Int
     var size: CGFloat
     var decay: CGFloat
     var friction: CGFloat
@@ -37,8 +35,15 @@ struct Rocket {
     var vx: CGFloat
     var vy: CGFloat
     var targetY: CGFloat
-    var color: RGBColor
-    var exploded: Bool
+    var imageIndex: Int
+    var trailTimer: CGFloat
+}
+
+struct PooledLayerState {
+    var imageIndex: Int = -1
+    var width: CGFloat = 0
+    var height: CGFloat = 0
+    var isHidden: Bool = true
 }
 
 // MARK: - Preferences Manager
@@ -59,13 +64,14 @@ public final class PreferencesManager {
             "showClock": true,       // Exibir relógio estilo Fliqlo
             "clockFormat24": true,   // true = 24h, false = 12h
             "clockScale": 2,         // 1=Pequeno (75%), 2=Médio (100%), 3=Grande (125%)
-            "frequency": 4,          // 1..10
+            "frequency": 3,          // 1..10 (3 = Equilibrado e econômico)
             "rocketSpeed": 2,        // 1=Lenta, 2=Normal, 3=Rápida, 4=Turbo
             "particleCount": 80,     // 50, 80, 140, 220
             "particleSize": 3.5,     // 2.5, 3.5, 5.0
             "gravity": 2,            // 1=Flutuante (Lua), 2=Normal (Terra), 3=Pesada
             "colorPalette": 0,       // 0..4
-            "showTrails": true       // true/false
+            "showTrails": true,      // true/false
+            "fpsMode": 30            // 30=Eco/Silencioso (Padrão), 45=Equilibrado, 60=Máximo
         ])
     }
     
@@ -105,7 +111,7 @@ public final class PreferencesManager {
     public var frequency: Int {
         get {
             let val = defaults.integer(forKey: "frequency")
-            return val > 0 ? val : 4
+            return val > 0 ? val : 3
         }
         set {
             defaults.set(newValue, forKey: "frequency")
@@ -175,6 +181,17 @@ public final class PreferencesManager {
             defaults.synchronize()
         }
     }
+    
+    public var fpsMode: Int {
+        get {
+            let val = defaults.integer(forKey: "fpsMode")
+            return (val == 30 || val == 45 || val == 60) ? val : 30
+        }
+        set {
+            defaults.set(newValue, forKey: "fpsMode")
+            defaults.synchronize()
+        }
+    }
 }
 
 // MARK: - Configuration Sheet Controller
@@ -193,11 +210,12 @@ public class ConfigureSheetController: NSWindowController {
     private var particleSizePopup: NSPopUpButton!
     private var gravityPopup: NSPopUpButton!
     private var palettePopup: NSPopUpButton!
+    private var fpsPopup: NSPopUpButton!
     private var trailsCheckbox: NSButton!
     
     public init() {
         let sheetWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 490, height: 510),
+            contentRect: NSRect(x: 0, y: 0, width: 490, height: 545),
             styleMask: [.titled],
             backing: .buffered,
             defer: false
@@ -232,7 +250,7 @@ public class ConfigureSheetController: NSWindowController {
         let titleLabel = NSTextField(labelWithString: "Fogos de Artifício & Relógio")
         titleLabel.font = NSFont.systemFont(ofSize: 15, weight: .bold)
         
-        let subtitleLabel = NSTextField(labelWithString: "Personalize os fogos de artifício e o relógio estilo Fliqlo.")
+        let subtitleLabel = NSTextField(labelWithString: "Protetor de tela leve com aceleração via GPU Core Animation.")
         subtitleLabel.font = NSFont.systemFont(ofSize: 11)
         subtitleLabel.textColor = .secondaryLabelColor
         
@@ -253,7 +271,7 @@ public class ConfigureSheetController: NSWindowController {
         addSeparator()
         
         let labelColumnWidth: CGFloat = 160
-        let controlWidth: CGFloat = 220
+        let controlWidth: CGFloat = 230
         
         func makeLabel(_ text: String) -> NSTextField {
             let lbl = NSTextField(labelWithString: text)
@@ -298,13 +316,13 @@ public class ConfigureSheetController: NSWindowController {
         addSeparator()
         
         // --- SEÇÃO FOGOS DE ARTIFÍCIO ---
-        frequencySlider = NSSlider(value: 4, minValue: 1, maxValue: 10, target: self, action: #selector(sliderChanged(_:)))
+        frequencySlider = NSSlider(value: 3, minValue: 1, maxValue: 10, target: self, action: #selector(sliderChanged(_:)))
         frequencySlider.isContinuous = true
         frequencySlider.numberOfTickMarks = 10
         frequencySlider.allowsTickMarkValuesOnly = true
         frequencySlider.widthAnchor.constraint(equalToConstant: 130).isActive = true
         
-        frequencyValueLabel = NSTextField(labelWithString: "Normal (4/10)")
+        frequencyValueLabel = NSTextField(labelWithString: "Normal (3/10)")
         frequencyValueLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
         frequencyValueLabel.textColor = .secondaryLabelColor
         
@@ -325,13 +343,13 @@ public class ConfigureSheetController: NSWindowController {
         rocketSpeedPopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
         
         particleCountPopup = NSPopUpButton(frame: .zero, pullsDown: false)
-        particleCountPopup.addItem(withTitle: "Leve (~50 partículas)")
+        particleCountPopup.addItem(withTitle: "Leve (~40 partículas)")
         particleCountPopup.lastItem?.tag = 50
-        particleCountPopup.addItem(withTitle: "Equilibrado (~80 partículas)")
+        particleCountPopup.addItem(withTitle: "Equilibrado (~70 partículas)")
         particleCountPopup.lastItem?.tag = 80
-        particleCountPopup.addItem(withTitle: "Intenso (~140 partículas)")
+        particleCountPopup.addItem(withTitle: "Intenso (~120 partículas)")
         particleCountPopup.lastItem?.tag = 140
-        particleCountPopup.addItem(withTitle: "Espetacular (~220 partículas)")
+        particleCountPopup.addItem(withTitle: "Espetacular (~180 partículas)")
         particleCountPopup.lastItem?.tag = 220
         particleCountPopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
         
@@ -366,6 +384,15 @@ public class ConfigureSheetController: NSWindowController {
         palettePopup.lastItem?.tag = 4
         palettePopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
         
+        fpsPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        fpsPopup.addItem(withTitle: "Econômico / Silencioso (30 FPS)")
+        fpsPopup.lastItem?.tag = 30
+        fpsPopup.addItem(withTitle: "Equilibrado (45 FPS)")
+        fpsPopup.lastItem?.tag = 45
+        fpsPopup.addItem(withTitle: "Máximo (60 FPS)")
+        fpsPopup.lastItem?.tag = 60
+        fpsPopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
+        
         trailsCheckbox = NSButton(checkboxWithTitle: "Exibir rastro cintilante na subida", target: nil, action: nil)
         
         let emptyLeadingView2 = NSView()
@@ -377,9 +404,10 @@ public class ConfigureSheetController: NSWindowController {
         let fwRow4 = NSStackView(views: [makeLabel("Tamanho das Partículas:"), particleSizePopup])
         let fwRow5 = NSStackView(views: [makeLabel("Gravidade:"), gravityPopup])
         let fwRow6 = NSStackView(views: [makeLabel("Paleta de Cores:"), palettePopup])
-        let fwRow7 = NSStackView(views: [emptyLeadingView2, trailsCheckbox])
+        let fwRow7 = NSStackView(views: [makeLabel("Modo de Energia:"), fpsPopup])
+        let fwRow8 = NSStackView(views: [emptyLeadingView2, trailsCheckbox])
         
-        for row in [fwRow1, fwRow2, fwRow3, fwRow4, fwRow5, fwRow6, fwRow7] {
+        for row in [fwRow1, fwRow2, fwRow3, fwRow4, fwRow5, fwRow6, fwRow7, fwRow8] {
             row.orientation = .horizontal
             row.alignment = .centerY
             row.spacing = 10
@@ -459,6 +487,9 @@ public class ConfigureSheetController: NSWindowController {
         palettePopup.selectItem(withTag: prefs.colorPalette)
         if palettePopup.selectedItem == nil { palettePopup.selectItem(withTag: 0) }
         
+        fpsPopup.selectItem(withTag: prefs.fpsMode)
+        if fpsPopup.selectedItem == nil { fpsPopup.selectItem(withTag: 30) }
+        
         trailsCheckbox.state = prefs.showTrails ? .on : .off
     }
     
@@ -475,6 +506,7 @@ public class ConfigureSheetController: NSWindowController {
         if let selectedSizeTag = particleSizePopup.selectedItem?.tag { prefs.particleSize = CGFloat(selectedSizeTag) / 10.0 }
         if let selectedGravity = gravityPopup.selectedItem?.tag { prefs.gravity = selectedGravity }
         if let selectedPalette = palettePopup.selectedItem?.tag { prefs.colorPalette = selectedPalette }
+        if let selectedFps = fpsPopup.selectedItem?.tag { prefs.fpsMode = selectedFps }
         prefs.showTrails = (trailsCheckbox.state == .on)
     }
     
@@ -499,22 +531,40 @@ public class ConfigureSheetController: NSWindowController {
     }
 }
 
-// MARK: - Fireworks ScreenSaver View
+// MARK: - Fireworks ScreenSaver View (Hardware CALayer Architecture)
 
 @objc(FireworksView)
 public class FireworksView: ScreenSaverView {
+    private static let maxPoolSize = 300
+    
     private var particles: [Particle] = []
     private var rockets: [Rocket] = []
     private var lastFrameTime: CFTimeInterval = 0
+    private var lastClockCheckTime: CFTimeInterval = 0
+    private var spawnAccumulator: CGFloat = 0
     
     private var configSheetController: ConfigureSheetController?
+    
+    // Hardware-composited layers (No draw(_ rect:) full-screen CPU bitmap!)
+    private let hourCardLayer = CALayer()
+    private let minuteCardLayer = CALayer()
+    private let fireworksContainerLayer = CALayer()
+    private var particleLayers: [CALayer] = []
+    private var layerStates: [PooledLayerState] = []
+    private var previousActiveLayerCount: Int = 0
+    private var lastLayoutBounds: CGRect = .zero
+    
+    // Pre-rendered 16x16 circle textures for palette colors + spark + white flash
+    private var dotImages: [CGImage] = []
+    private var sparkImageIndex: Int = 0
+    private var whiteImageIndex: Int = 0
     
     // Configurable parameters
     private var showClock: Bool = true
     private var clockFormat24: Bool = true
     private var clockScale: Int = 2
     
-    private var frequency: Int = 4
+    private var frequency: Int = 3
     private var rocketSpeedTag: Int = 2
     private var particleCount: Int = 80
     private var baseParticleSize: CGFloat = 3.5
@@ -535,6 +585,7 @@ public class FireworksView: ScreenSaverView {
     private var isMinuteFlipping: Bool = false
     
     private var currentAmPmStr: String? = nil
+    private var clockNeedsRedraw: Bool = true
     
     // Enable "Opções..." button in macOS System Settings
     public override var hasConfigureSheet: Bool {
@@ -551,6 +602,10 @@ public class FireworksView: ScreenSaverView {
         }
         return configSheetController?.window
     }
+    
+    public override var isOpaque: Bool {
+        return true
+    }
 
     public override init?(frame: NSRect, isPreview: Bool) {
         super.init(frame: frame, isPreview: isPreview)
@@ -563,10 +618,44 @@ public class FireworksView: ScreenSaverView {
     }
     
     private func setupEngine() {
-        animationTimeInterval = 1.0 / 60.0
+        particles.reserveCapacity(Self.maxPoolSize)
+        rockets.reserveCapacity(16)
+        
         wantsLayer = true
-        layer?.drawsAsynchronously = true
+        guard let rootLayer = self.layer else { return }
+        rootLayer.backgroundColor = CGColor(red: 0, green: 0, blue: 0, alpha: 1.0)
+        rootLayer.isOpaque = true
+        
+        // Setup Clock Card Layers (cached in VRAM, redrawn only once per minute)
+        hourCardLayer.contentsGravity = .resizeAspectFill
+        minuteCardLayer.contentsGravity = .resizeAspectFill
+        rootLayer.addSublayer(hourCardLayer)
+        rootLayer.addSublayer(minuteCardLayer)
+        
+        // Setup Fireworks Layer Pool
+        rootLayer.addSublayer(fireworksContainerLayer)
+        particleLayers.reserveCapacity(Self.maxPoolSize)
+        layerStates.reserveCapacity(Self.maxPoolSize)
+        
+        for _ in 0 ..< Self.maxPoolSize {
+            let pLayer = CALayer()
+            pLayer.isHidden = true
+            fireworksContainerLayer.addSublayer(pLayer)
+            particleLayers.append(pLayer)
+            layerStates.append(PooledLayerState())
+        }
+        
         reloadSettings()
+    }
+    
+    public override func layout() {
+        super.layout()
+        if bounds != lastLayoutBounds {
+            lastLayoutBounds = bounds
+            updateClockLayerFrames()
+            clockNeedsRedraw = true
+            renderClockLayersIfNeeded(now: CACurrentMediaTime(), force: true)
+        }
     }
     
     public func reloadSettings() {
@@ -583,6 +672,9 @@ public class FireworksView: ScreenSaverView {
         self.showTrails = prefs.showTrails
         self.activeColors = paletteColors(for: prefs.colorPalette)
         
+        let fps = Double(prefs.fpsMode)
+        self.animationTimeInterval = 1.0 / fps
+        
         switch prefs.gravity {
         case 1:
             self.gravityValue = 0.05 // Flutuante / Lua
@@ -591,6 +683,70 @@ public class FireworksView: ScreenSaverView {
         default:
             self.gravityValue = 0.12 // Normal / Terra
         }
+        
+        rebuildDotTextures()
+        
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hourCardLayer.isHidden = !showClock
+        minuteCardLayer.isHidden = !showClock
+        updateClockLayerFrames()
+        CATransaction.commit()
+        
+        // Force clock refresh on format/scale change
+        currentHourStr = ""
+        currentMinuteStr = ""
+        clockNeedsRedraw = true
+        updateClockTime(now: CACurrentMediaTime(), force: true)
+        renderClockLayersIfNeeded(now: CACurrentMediaTime(), force: true)
+    }
+    
+    private func rebuildDotTextures() {
+        dotImages.removeAll()
+        for c in activeColors {
+            if let img = Self.makeGlowingDotImage(r: c.r, g: c.g, b: c.b) {
+                dotImages.append(img)
+            }
+        }
+        // Append golden spark texture
+        sparkImageIndex = dotImages.count
+        if let sparkImg = Self.makeGlowingDotImage(r: 1.0, g: 0.82, b: 0.35) {
+            dotImages.append(sparkImg)
+        }
+        // Append white-hot core texture
+        whiteImageIndex = dotImages.count
+        if let whiteImg = Self.makeGlowingDotImage(r: 1.0, g: 1.0, b: 1.0) {
+            dotImages.append(whiteImg)
+        }
+        
+        // Reset cached imageIndex in layerStates so layers pick up new palette textures
+        for i in 0 ..< layerStates.count {
+            layerStates[i].imageIndex = -1
+        }
+    }
+    
+    private static func makeGlowingDotImage(r: CGFloat, g: CGFloat, b: CGFloat) -> CGImage? {
+        let size = 16
+        let cs = CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: nil,
+            width: size,
+            height: size,
+            bitsPerComponent: 8,
+            bytesPerRow: size * 4,
+            space: cs,
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+        ) else { return nil }
+        
+        // Soft outer halo
+        ctx.setFillColor(red: r, green: g, blue: b, alpha: 0.35)
+        ctx.fillEllipse(in: CGRect(x: 0, y: 0, width: 16, height: 16))
+        
+        // Bright inner core
+        ctx.setFillColor(red: r, green: g, blue: b, alpha: 1.0)
+        ctx.fillEllipse(in: CGRect(x: 2.5, y: 2.5, width: 11, height: 11))
+        
+        return ctx.makeImage()
     }
     
     private var rocketSpeedRange: ClosedRange<CGFloat> {
@@ -663,54 +819,92 @@ public class FireworksView: ScreenSaverView {
 
     public override func stopAnimation() {
         super.stopAnimation()
+        rockets.removeAll()
+        particles.removeAll()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for i in 0 ..< previousActiveLayerCount {
+            particleLayers[i].isHidden = true
+            layerStates[i].isHidden = true
+        }
+        previousActiveLayerCount = 0
+        CATransaction.commit()
     }
 
     public override func animateOneFrame() {
+        guard bounds.width > 10 && bounds.height > 10 else { return }
+        
         let now = CACurrentMediaTime()
         let dt: CGFloat
         if lastFrameTime == 0 {
-            dt = 1.0 / 60.0
+            dt = CGFloat(animationTimeInterval)
         } else {
-            dt = min(max(CGFloat(now - lastFrameTime), 0.005), 0.05)
+            dt = min(max(CGFloat(now - lastFrameTime), 0.005), 0.1)
         }
         lastFrameTime = now
         
+        // Factor normalized to 60Hz baseline so physics speed is identical at 30, 45, or 60 FPS
         let factor = dt * 60.0
         
-        // --- Atualizar Estado do Relógio Fliqlo ---
+        // 1. Update Clock (checks Date only every 0.5s or while flipping)
         if showClock {
-            updateClockTime(now: now)
+            if isHourFlipping || isMinuteFlipping || (now - lastClockCheckTime >= 0.5) {
+                lastClockCheckTime = now
+                updateClockTime(now: now, force: false)
+            }
+            if clockNeedsRedraw || isHourFlipping || isMinuteFlipping {
+                renderClockLayersIfNeeded(now: now, force: false)
+            }
         }
         
-        // Spawn rockets randomly based on frequency
-        let spawnChance = UInt32(max(1, frequency))
-        let maxRockets = max(2, frequency + 2)
+        // 2. Spawn rockets with natural rhythm (frame-rate independent)
+        // frequency 1..10 -> ~0.35 to 3.5 rockets per second
+        let maxRockets = max(2, (frequency + 1) / 2 + 1)
+        let rocketsPerSec = CGFloat(frequency) * 0.35
+        spawnAccumulator += rocketsPerSec * dt
         
-        if arc4random_uniform(100) < spawnChance && rockets.count < maxRockets {
+        if spawnAccumulator >= 1.0 {
+            spawnAccumulator -= 1.0
+            if rockets.count < maxRockets && particles.count < (Self.maxPoolSize - 40) {
+                let startX = CGFloat.random(in: bounds.width * 0.12 ... bounds.width * 0.88)
+                let targetY = CGFloat.random(in: bounds.height * 0.50 ... bounds.height * 0.86)
+                let colorIdx = activeColors.isEmpty ? 0 : Int.random(in: 0 ..< activeColors.count)
+                let vy = CGFloat.random(in: rocketSpeedRange)
+                let vx = CGFloat.random(in: -0.5 ... 0.5)
+                rockets.append(Rocket(x: startX, y: 0, vx: vx, vy: vy, targetY: targetY, imageIndex: colorIdx, trailTimer: 0))
+            }
+        } else if rockets.isEmpty && particles.isEmpty && CGFloat.random(in: 0...1) < (rocketsPerSec * dt) {
             let startX = CGFloat.random(in: bounds.width * 0.12 ... bounds.width * 0.88)
             let targetY = CGFloat.random(in: bounds.height * 0.50 ... bounds.height * 0.86)
-            let color = activeColors.randomElement() ?? RGBColor(r: 1, g: 0.8, b: 0)
+            let colorIdx = activeColors.isEmpty ? 0 : Int.random(in: 0 ..< activeColors.count)
             let vy = CGFloat.random(in: rocketSpeedRange)
             let vx = CGFloat.random(in: -0.5 ... 0.5)
-            rockets.append(Rocket(x: startX, y: 0, vx: vx, vy: vy, targetY: targetY, color: color, exploded: false))
+            rockets.append(Rocket(x: startX, y: 0, vx: vx, vy: vy, targetY: targetY, imageIndex: colorIdx, trailTimer: 0))
         }
 
-        // Update rockets
+        // Fast exit if nothing is moving on screen (0% CPU idle state)
+        if rockets.isEmpty && particles.isEmpty && previousActiveLayerCount == 0 {
+            return
+        }
+
+        // 3. Update rockets
         for i in (0 ..< rockets.count).reversed() {
             rockets[i].x += rockets[i].vx * factor
             rockets[i].y += rockets[i].vy * factor
             rockets[i].vy -= 0.12 * factor
+            rockets[i].trailTimer += factor
             
-            if showTrails {
+            if showTrails && rockets[i].trailTimer >= 1.8 && particles.count < (Self.maxPoolSize - 10) {
+                rockets[i].trailTimer = 0
                 let spark = Particle(
                     x: rockets[i].x + CGFloat.random(in: -1.0 ... 1.0),
                     y: rockets[i].y - 3.0,
-                    vx: CGFloat.random(in: -0.4 ... 0.4),
-                    vy: CGFloat.random(in: -1.8 ... -0.6),
-                    alpha: CGFloat.random(in: 0.65 ... 0.9),
-                    r: 1.0, g: 0.82, b: 0.35,
-                    size: 2.0,
-                    decay: CGFloat.random(in: 0.03 ... 0.05),
+                    vx: CGFloat.random(in: -0.35 ... 0.35),
+                    vy: CGFloat.random(in: -1.6 ... -0.5),
+                    alpha: CGFloat.random(in: 0.65 ... 0.88),
+                    imageIndex: sparkImageIndex,
+                    size: 2.5,
+                    decay: CGFloat.random(in: 0.035 ... 0.055),
                     friction: 0.94
                 )
                 particles.append(spark)
@@ -722,7 +916,7 @@ public class FireworksView: ScreenSaverView {
             }
         }
 
-        // Update particles
+        // 4. Update particles
         let g = gravityValue * factor
         for i in (0 ..< particles.count).reversed() {
             let f = pow(particles[i].friction, factor)
@@ -733,15 +927,166 @@ public class FireworksView: ScreenSaverView {
             particles[i].y += particles[i].vy * factor
             particles[i].alpha -= particles[i].decay * factor
             
-            if particles[i].alpha <= 0 {
+            if particles[i].alpha <= 0.02 {
                 particles.remove(at: i)
             }
         }
 
-        needsDisplay = true
+        // 5. Commit positions to Hardware CALayer Pool (Zero bitmap rasterization)
+        syncParticleLayers()
     }
     
-    private func updateClockTime(now: CFTimeInterval) {
+    private func syncParticleLayers() {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        
+        var layerIdx = 0
+        let totalImages = dotImages.count
+        
+        // Assign layers for active rockets
+        for rocket in rockets {
+            guard layerIdx < Self.maxPoolSize else { break }
+            let layer = particleLayers[layerIdx]
+            
+            if layerStates[layerIdx].isHidden {
+                layer.isHidden = false
+                layerStates[layerIdx].isHidden = false
+            }
+            if layerStates[layerIdx].imageIndex != rocket.imageIndex && rocket.imageIndex < totalImages {
+                layer.contents = dotImages[rocket.imageIndex]
+                layerStates[layerIdx].imageIndex = rocket.imageIndex
+            }
+            if layerStates[layerIdx].width != 5.0 || layerStates[layerIdx].height != 9.0 {
+                layer.bounds = CGRect(x: 0, y: 0, width: 5.0, height: 9.0)
+                layerStates[layerIdx].width = 5.0
+                layerStates[layerIdx].height = 9.0
+            }
+            layer.position = CGPoint(x: rocket.x, y: rocket.y)
+            layer.opacity = 1.0
+            layerIdx += 1
+        }
+        
+        // Assign layers for active particles
+        for p in particles {
+            guard layerIdx < Self.maxPoolSize else { break }
+            let layer = particleLayers[layerIdx]
+            
+            if layerStates[layerIdx].isHidden {
+                layer.isHidden = false
+                layerStates[layerIdx].isHidden = false
+            }
+            if layerStates[layerIdx].imageIndex != p.imageIndex && p.imageIndex < totalImages {
+                layer.contents = dotImages[p.imageIndex]
+                layerStates[layerIdx].imageIndex = p.imageIndex
+            }
+            let sz = p.size
+            if abs(layerStates[layerIdx].width - sz) > 0.25 || abs(layerStates[layerIdx].height - sz) > 0.25 {
+                layer.bounds = CGRect(x: 0, y: 0, width: sz, height: sz)
+                layerStates[layerIdx].width = sz
+                layerStates[layerIdx].height = sz
+            }
+            layer.position = CGPoint(x: p.x, y: p.y)
+            layer.opacity = Float(p.alpha)
+            layerIdx += 1
+        }
+        
+        // Hide only layers that were active on the previous frame and are no longer active
+        if layerIdx < previousActiveLayerCount {
+            for i in layerIdx ..< previousActiveLayerCount {
+                if !layerStates[i].isHidden {
+                    particleLayers[i].isHidden = true
+                    layerStates[i].isHidden = true
+                }
+            }
+        }
+        previousActiveLayerCount = layerIdx
+        
+        CATransaction.commit()
+    }
+
+    private func explode(rocket: Rocket) {
+        let availableSlots = max(0, Self.maxPoolSize - particles.count - rockets.count)
+        guard availableSlots > 8 else { return }
+        
+        let targetCount = min(availableSlots - 4, particleCount)
+        let minCount = max(15, Int(Double(targetCount) * 0.75))
+        let maxCount = max(minCount + 5, min(availableSlots - 4, Int(Double(targetCount) * 1.15)))
+        let count = Int.random(in: minCount ... maxCount)
+        
+        for _ in 0 ..< count {
+            let angle = CGFloat.random(in: 0 ... 2 * .pi)
+            let speed = CGFloat.random(in: 2.5 ... 8.0)
+            let sizeVariation = CGFloat.random(in: 0.85 ... 1.25)
+            let decay = CGFloat.random(in: 0.013 ... 0.024)
+            
+            let p = Particle(
+                x: rocket.x,
+                y: rocket.y,
+                vx: cos(angle) * speed,
+                vy: sin(angle) * speed,
+                alpha: 1.0,
+                imageIndex: rocket.imageIndex,
+                size: baseParticleSize * sizeVariation,
+                decay: decay,
+                friction: 0.963
+            )
+            particles.append(p)
+        }
+        
+        // White-hot center flash
+        for _ in 0 ..< 4 {
+            let flashSpeed = CGFloat.random(in: 0.5 ... 2.0)
+            let angle = CGFloat.random(in: 0 ... 2 * .pi)
+            particles.append(Particle(
+                x: rocket.x,
+                y: rocket.y,
+                vx: cos(angle) * flashSpeed,
+                vy: sin(angle) * flashSpeed,
+                alpha: 1.0,
+                imageIndex: whiteImageIndex,
+                size: baseParticleSize * 1.4,
+                decay: 0.06,
+                friction: 0.90
+            ))
+        }
+    }
+    
+    // MARK: - Cached Fliqlo Clock Layer Management
+    
+    private func computeClockMetrics() -> (hourRect: CGRect, minuteRect: CGRect) {
+        let scaleMultiplier: CGFloat
+        switch clockScale {
+        case 1: scaleMultiplier = 0.75
+        case 3: scaleMultiplier = 1.25
+        default: scaleMultiplier = 1.0
+        }
+        
+        let baseW = min(bounds.width * 0.175, 270.0) * scaleMultiplier
+        let baseH = baseW * 1.15
+        let cardW = round(max(60.0, baseW))
+        let cardH = round(max(70.0, baseH))
+        let gap = round(max(8.0, cardW * 0.08))
+        let totalW = cardW * 2.0 + gap
+        
+        let startX = round((bounds.width - totalW) * 0.5)
+        let startY = round((bounds.height - cardH) * 0.5)
+        
+        let hourRect = CGRect(x: startX, y: startY, width: cardW, height: cardH)
+        let minuteRect = CGRect(x: startX + cardW + gap, y: startY, width: cardW, height: cardH)
+        return (hourRect, minuteRect)
+    }
+    
+    private func updateClockLayerFrames() {
+        let metrics = computeClockMetrics()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hourCardLayer.frame = metrics.hourRect
+        minuteCardLayer.frame = metrics.minuteRect
+        fireworksContainerLayer.frame = bounds
+        CATransaction.commit()
+    }
+    
+    private func updateClockTime(now: CFTimeInterval, force: Bool) {
         let date = Date()
         let cal = Calendar.current
         let rawHour = cal.component(.hour, from: date)
@@ -758,168 +1103,112 @@ public class FireworksView: ScreenSaverView {
         }
         let newMinuteStr = String(format: "%02d", rawMinute)
         
-        if currentMinuteStr.isEmpty {
+        if currentMinuteStr.isEmpty || force {
             currentMinuteStr = newMinuteStr
             previousMinuteStr = newMinuteStr
+            clockNeedsRedraw = true
         } else if newMinuteStr != currentMinuteStr {
             previousMinuteStr = currentMinuteStr
             currentMinuteStr = newMinuteStr
             minuteFlipStartTime = now
             isMinuteFlipping = true
+            clockNeedsRedraw = true
         }
         
-        if currentHourStr.isEmpty {
+        if currentHourStr.isEmpty || force {
             currentHourStr = newHourStr
             previousHourStr = newHourStr
+            clockNeedsRedraw = true
         } else if newHourStr != currentHourStr {
             previousHourStr = currentHourStr
             currentHourStr = newHourStr
             hourFlipStartTime = now
             isHourFlipping = true
+            clockNeedsRedraw = true
         }
         
         if isMinuteFlipping && (now - minuteFlipStartTime) >= 0.45 {
             isMinuteFlipping = false
+            clockNeedsRedraw = true
         }
         if isHourFlipping && (now - hourFlipStartTime) >= 0.45 {
             isHourFlipping = false
+            clockNeedsRedraw = true
         }
     }
-
-    private func explode(rocket: Rocket) {
-        let minCount = max(25, Int(Double(particleCount) * 0.75))
-        let maxCount = max(minCount + 10, Int(Double(particleCount) * 1.25))
-        let count = Int.random(in: minCount ... maxCount)
-        let color = rocket.color
+    
+    private func renderClockLayersIfNeeded(now: CFTimeInterval, force: Bool) {
+        guard showClock else { return }
+        let metrics = computeClockMetrics()
+        let cardSize = metrics.hourRect.size
+        guard cardSize.width > 10 && cardSize.height > 10 else { return }
         
-        for _ in 0 ..< count {
-            let angle = CGFloat.random(in: 0 ... 2 * .pi)
-            let speed = CGFloat.random(in: 2.5 ... 8.0)
-            let sizeVariation = CGFloat.random(in: 0.8 ... 1.25)
-            let decay = CGFloat.random(in: 0.011 ... 0.022)
-            
-            let p = Particle(
-                x: rocket.x,
-                y: rocket.y,
-                vx: cos(angle) * speed,
-                vy: sin(angle) * speed,
-                alpha: 1.0,
-                r: color.r,
-                g: color.g,
-                b: color.b,
-                size: baseParticleSize * sizeVariation,
-                decay: decay,
-                friction: 0.963
-            )
-            particles.append(p)
-        }
+        let backingScale = window?.backingScaleFactor ?? 2.0
         
-        // White-hot center flash
-        for _ in 0 ..< 6 {
-            let flashSpeed = CGFloat.random(in: 0.5 ... 2.0)
-            let angle = CGFloat.random(in: 0 ... 2 * .pi)
-            particles.append(Particle(
-                x: rocket.x,
-                y: rocket.y,
-                vx: cos(angle) * flashSpeed,
-                vy: sin(angle) * flashSpeed,
-                alpha: 1.0,
-                r: 1.0, g: 1.0, b: 1.0,
-                size: baseParticleSize * 1.3,
-                decay: 0.05,
-                friction: 0.90
-            ))
-        }
-    }
-
-    public override func draw(_ rect: NSRect) {
-        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-
-        // Solid black background
-        ctx.setFillColor(red: 0, green: 0, blue: 0, alpha: 1.0)
-        ctx.fill(rect)
-
-        // 1. Draw Fliqlo Clock in background
-        if showClock {
-            drawFliqloClock(ctx: ctx)
-        }
-
-        // 2. Draw rockets in front of clock
-        for rocket in rockets {
-            let rRect = CGRect(x: rocket.x - 2, y: rocket.y - 4, width: 4, height: 8)
-            ctx.setFillColor(red: rocket.color.r, green: rocket.color.g, blue: rocket.color.b, alpha: 1.0)
-            ctx.fillEllipse(in: rRect)
-        }
-
-        // 3. Draw particles and sparks
-        for p in particles {
-            let half = p.size * 0.5
-            let pRect = CGRect(x: p.x - half, y: p.y - half, width: p.size, height: p.size)
-            ctx.setFillColor(red: p.r, green: p.g, blue: p.b, alpha: p.alpha)
-            
-            if p.size <= 3.0 {
-                ctx.fill(pRect)
-            } else {
-                ctx.fillEllipse(in: pRect)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        
+        if force || clockNeedsRedraw || isHourFlipping {
+            let hourProgress: CGFloat? = isHourFlipping ? min(1.0, CGFloat((now - hourFlipStartTime) / 0.45)) : nil
+            if let img = createCardImage(size: cardSize, scale: backingScale, oldText: previousHourStr, newText: currentHourStr, progress: hourProgress, amPm: currentAmPmStr) {
+                hourCardLayer.contents = img
             }
         }
+        
+        if force || clockNeedsRedraw || isMinuteFlipping {
+            let minuteProgress: CGFloat? = isMinuteFlipping ? min(1.0, CGFloat((now - minuteFlipStartTime) / 0.45)) : nil
+            if let img = createCardImage(size: cardSize, scale: backingScale, oldText: previousMinuteStr, newText: currentMinuteStr, progress: minuteProgress, amPm: nil) {
+                minuteCardLayer.contents = img
+            }
+        }
+        
+        CATransaction.commit()
+        clockNeedsRedraw = false
     }
     
-    // MARK: - Fliqlo Clock Rendering
-    
-    private func drawFliqloClock(ctx: CGContext) {
-        let now = CACurrentMediaTime()
-        let hourProgress: CGFloat = isHourFlipping ? min(1.0, CGFloat((now - hourFlipStartTime) / 0.45)) : 1.0
-        let minuteProgress: CGFloat = isMinuteFlipping ? min(1.0, CGFloat((now - minuteFlipStartTime) / 0.45)) : 1.0
+    private func createCardImage(size: CGSize, scale: CGFloat, oldText: String, newText: String, progress: CGFloat?, amPm: String?) -> CGImage? {
+        let pixelW = max(1, Int(ceil(size.width * scale)))
+        let pixelH = max(1, Int(ceil(size.height * scale)))
+        let cs = CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: nil,
+            width: pixelW,
+            height: pixelH,
+            bitsPerComponent: 8,
+            bytesPerRow: pixelW * 4,
+            space: cs,
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+        ) else { return nil }
         
-        let scaleMultiplier: CGFloat
-        switch clockScale {
-        case 1: scaleMultiplier = 0.75
-        case 3: scaleMultiplier = 1.25
-        default: scaleMultiplier = 1.0
-        }
+        ctx.scaleBy(x: scale, y: scale)
         
-        let baseW = min(bounds.width * 0.175, 270.0) * scaleMultiplier
-        let baseH = baseW * 1.15
-        let cardW = max(70.0, baseW)
-        let cardH = max(80.0, baseH)
-        let gap = max(10.0, cardW * 0.08)
-        let totalW = cardW * 2.0 + gap
+        let prevContext = NSGraphicsContext.current
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: false)
+        defer { NSGraphicsContext.current = prevContext }
         
-        let startX = (bounds.width - totalW) * 0.5
-        let startY = (bounds.height - cardH) * 0.5
-        
-        let hourRect = CGRect(x: startX, y: startY, width: cardW, height: cardH)
-        let minuteRect = CGRect(x: startX + cardW + gap, y: startY, width: cardW, height: cardH)
-        
-        // Draw Hour Card
-        if hourProgress < 1.0 {
-            renderFlippingCard(ctx: ctx, bounds: hourRect, oldText: previousHourStr, newText: currentHourStr, progress: hourProgress, amPm: currentAmPmStr)
+        let cardBounds = CGRect(origin: .zero, size: size)
+        if let p = progress, p < 1.0 {
+            renderFlippingCard(ctx: ctx, bounds: cardBounds, oldText: oldText, newText: newText, progress: p, amPm: amPm)
         } else {
-            renderCard(ctx: ctx, bounds: hourRect, text: currentHourStr, amPm: currentAmPmStr)
+            renderCard(ctx: ctx, bounds: cardBounds, text: newText, amPm: amPm)
         }
         
-        // Draw Minute Card
-        if minuteProgress < 1.0 {
-            renderFlippingCard(ctx: ctx, bounds: minuteRect, oldText: previousMinuteStr, newText: currentMinuteStr, progress: minuteProgress, amPm: nil)
-        } else {
-            renderCard(ctx: ctx, bounds: minuteRect, text: currentMinuteStr, amPm: nil)
-        }
+        return ctx.makeImage()
     }
     
     private func renderCard(ctx: CGContext, bounds: CGRect, text: String, amPm: String?) {
         let radius = bounds.width * 0.075
-        let path = CGPath(roundedRect: bounds, cornerWidth: radius, cornerHeight: radius, transform: nil)
+        let path = CGPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), cornerWidth: radius, cornerHeight: radius, transform: nil)
         let midY = bounds.midY
         
         // 1. Dark charcoal plate background
         ctx.addPath(path)
-        ctx.setFillColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 0.92)
+        ctx.setFillColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 0.94)
         ctx.fillPath()
         
         // 2. Subtle outer border
         ctx.addPath(path)
-        ctx.setStrokeColor(red: 0.22, green: 0.22, blue: 0.24, alpha: 0.8)
+        ctx.setStrokeColor(red: 0.22, green: 0.22, blue: 0.24, alpha: 0.85)
         ctx.setLineWidth(1.0)
         ctx.strokePath()
         
@@ -962,7 +1251,7 @@ public class FireworksView: ScreenSaverView {
     
     private func renderFlippingCard(ctx: CGContext, bounds: CGRect, oldText: String, newText: String, progress: CGFloat, amPm: String?) {
         let radius = bounds.width * 0.075
-        let path = CGPath(roundedRect: bounds, cornerWidth: radius, cornerHeight: radius, transform: nil)
+        let path = CGPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), cornerWidth: radius, cornerHeight: radius, transform: nil)
         let midY = bounds.midY
         let halfH = bounds.height * 0.5
         
@@ -981,7 +1270,7 @@ public class FireworksView: ScreenSaverView {
         
         // 1. Background
         ctx.addPath(path)
-        ctx.setFillColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 0.92)
+        ctx.setFillColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 0.94)
         ctx.fillPath()
         
         // 2. Static top half (shows new incoming number)
@@ -1022,7 +1311,6 @@ public class FireworksView: ScreenSaverView {
             ctx.translateBy(x: 0, y: -midY)
             oldStr.draw(in: oldTextRect, withAttributes: attrs)
             
-            // Progressive shadow as flap turns away
             ctx.setFillColor(red: 0, green: 0, blue: 0, alpha: (p / 0.5) * 0.65)
             ctx.fill(flapRect)
             ctx.restoreGState()
@@ -1044,7 +1332,6 @@ public class FireworksView: ScreenSaverView {
             ctx.translateBy(x: 0, y: -midY)
             newStr.draw(in: newTextRect, withAttributes: attrs)
             
-            // Fading shadow as flap lands
             ctx.setFillColor(red: 0, green: 0, blue: 0, alpha: ((1.0 - p) / 0.5) * 0.65)
             ctx.fill(flapRect)
             ctx.restoreGState()
@@ -1052,7 +1339,7 @@ public class FireworksView: ScreenSaverView {
         
         // 5. Border
         ctx.addPath(path)
-        ctx.setStrokeColor(red: 0.22, green: 0.22, blue: 0.24, alpha: 0.8)
+        ctx.setStrokeColor(red: 0.22, green: 0.22, blue: 0.24, alpha: 0.85)
         ctx.setLineWidth(1.0)
         ctx.strokePath()
         
